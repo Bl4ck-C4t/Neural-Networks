@@ -32,24 +32,24 @@ class Neuron:
 
 class NeuronLayer():
     def __init__(self, number_of_neurons, number_of_inputs_per_neuron, name):
-        self.synaptic_weights = [Neuron(number_of_inputs_per_neuron) for _ in range(number_of_neurons)]
+        self.neurons = [Neuron(number_of_inputs_per_neuron) for _ in range(number_of_neurons)]
         self.name = name
 
     def __getitem__(self, item):
-        return self.synaptic_weights[item]
+        return self.neurons[item]
 
     def __setitem__(self, key, value):
-        self.synaptic_weights[key] = value
+        self.neurons[key] = value
 
     def __len__(self):
-        return len(self.synaptic_weights)
+        return len(self.neurons)
 
     def __iter__(self):
-        return iter(self.synaptic_weights)
+        return iter(self.neurons)
 
     def __str__(self):
         p1 = "    {} ({} neurons, each with {} inputs): \n".format(self.name, len(self), len(self[0]))
-        return p1 + str(self.synaptic_weights)
+        return p1 + str(self.neurons)
 
 
 class NeuralNetwork():
@@ -148,7 +148,7 @@ class NeuralNetwork():
 
 
     # The neural network prints its weights
-    def print_weights(self):
+    def print_layers(self):
         print(self.layer1)
         print(self.layer2)
 
@@ -156,16 +156,16 @@ class NeuralNetwork():
 if __name__ == "__main__":
     # Seed the random number generator
     # Create layer 1 (4 neurons, each with 3 inputs)
-    layer1 = NeuronLayer(4, 3, "Layer 1")
+    #layer1 = NeuronLayer(4, 3, "Layer 1")
 
     # Create layer 2 (a single neuron with 4 inputs)
-    layer2 = NeuronLayer(1, 4, "Layer 2")
+    #layer2 = NeuronLayer(1, 4, "Layer 2")
 
     # Combine the layers to create a neural network
     neural_network = NeuralNetwork.load()
 
     # print("Stage 1) Random starting synaptic weights: ")
-    neural_network.print_weights()
+    neural_network.print_layers()
 
     # The training set. We have 7 examples, each consisting of 3 input values
     # and 1 output value.
@@ -176,12 +176,14 @@ if __name__ == "__main__":
 
     # Train the neural network using the training set.
     # Do it 60,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 60000)
+    neural_network.train(training_set_inputs, training_set_outputs, 80000)
 
     # print("Stage 2) New synaptic weights after training: ")
-    neural_network.print_weights()
+    neural_network.print_layers()
 
     # Test the neural network with a new situation.
     # print("Stage 3) Considering a new situation [1, 1, 0] -> ?: ")
     result, hidden_state = neural_network.think([1, 1, 0])
     print(result)
+
+    print("Accurancy: " + str((abs(0 - result) / result)*100) + "%")
