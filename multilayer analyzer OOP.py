@@ -53,10 +53,11 @@ class NeuronLayer():
 
 
 class NeuralNetwork():
-    def __init__(self, layer1, layer2):
+    def __init__(self, layer1, layer2, name='Default'):
         self.layer1 = layer1
         self.layer2 = layer2
         self.scale_n = 1
+        self.name = name
 
     # The Sigmoid function, which describes an S shaped curve.
     # We pass the weighted sum of the inputs through this function to
@@ -71,7 +72,7 @@ class NeuralNetwork():
         return x * (1 - x)
 
     def sum_weights(self, inputs, weights):
-        return sum(val * weights[i] for i, val in enumerate(inputs))
+        return sum(val * weight for val, weight in zip(inputs, weights))
 
     def save(self, filename="network.d"):
         with open(filename, "wb") as f:
@@ -82,33 +83,24 @@ class NeuralNetwork():
         with open(filename, "rb") as f:
             return pickle.load(f)
 
-    def rotation_sum(self, inputs, weights):
-        res = []
-        for inp in inputs:
-            tmp = []
-            for x in weights:
-                tmp.append(inp * x)
-            res.append(tmp)
-        return res
-
     def adjust(self, neurons, inputs, deltas):
         for i, neuron in enumerate(neurons):
             for j, weight in enumerate(neuron):
-                layer1_adjustment = inputs[j] * deltas[i]
-                neurons[i][j] += layer1_adjustment
+                adjustment = inputs[j] * deltas[i]
+                neurons[i][j] += adjustment
 
     def scale(self, ls, down=True):
         biggest = int(sorted(ls)[-1])
-        scale = 10**(len(str(biggest))) if biggest > 1 else 1
+        scale = 10 ** (len(str(biggest))) if biggest > 1 else 1
         self.scale_n = scale if self.scale_n < scale else self.scale_n
         if down:
-            return [x/scale for x in ls]
+            return [x / scale for x in ls]
         else:
-            return [x*scale for x in ls]
+            return [x * scale for x in ls]
 
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
-    def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations):
+    def train(self, training_set_inputs, training_set_outputs, number_of_training_iterations, fl='network.d'):
         self.start_time = datetime.datetime.now()
         for iteration in range(number_of_training_iterations):
             # Pass the training set through our neural network
@@ -116,23 +108,27 @@ class NeuralNetwork():
                 print("Currently at iteration " + str(iteration))
                 delta_time = datetime.datetime.now() - self.start_time
                 print("Time elapsed: " + str(delta_time))
-            for i in range(len(training_set_inputs)):
-                s_input = self.scale(training_set_inputs[i])
+
+            if iteration % 50000 == 0 and iteration > 0:
+                self.save(fl)
+
+            for s_input, s_output in zip(training_set_inputs, training_set_outputs):
+                s_input = self.scale(s_input)
                 # exit()
                 output, neuron_outputs = self.think(s_input)
                 # Calculate the error for layer 2 (The difference between the desired output
                 # and the predicted output).
-                output_error = training_set_outputs[i] - output
+                output_error = s_output - output
                 output_delta = output_error * self.sigmoid_der(output)
 
-                hidden_error = [output_delta * weight for weight in self.layer2[0]]
-                hidden_delta = [self.sigmoid_der(x) * hidden_error[i] for i, x in enumerate(neuron_outputs)]
+                hidden_errors = [output_delta * weight for weight in self.layer2[0]]
+                hidden_deltas = [self.sigmoid_der(x) * hidden_errors[i] for i, x in enumerate(neuron_outputs)]
 
-                self.adjust(self.layer1, s_input, hidden_delta)
+                self.adjust(self.layer1, s_input, hidden_deltas)
                 self.adjust(self.layer2, neuron_outputs, [output_delta])
         end_time = datetime.datetime.now() - self.start_time
         print("Done {} iterations on {} datasets for ".format(iteration + 1, len(training_set_inputs)) + str(end_time))
-        self.save()
+        self.save(fl)
 
     # The neural network thinks.
     def think(self, inputs):
@@ -143,9 +139,8 @@ class NeuralNetwork():
         return output, neuron_outputs
 
     def predict(self, inputs):
-        res = self.think(inputs)
-        return res*self.scale_n
-
+        res, _ = self.think(inputs)
+        return res * self.scale_n
 
     # The neural network prints its weights
     def print_layers(self):
@@ -156,10 +151,10 @@ class NeuralNetwork():
 if __name__ == "__main__":
     # Seed the random number generator
     # Create layer 1 (4 neurons, each with 3 inputs)
-    #layer1 = NeuronLayer(4, 3, "Layer 1")
+    # layer1 = NeuronLayer(4, 3, "Layer 1")
 
     # Create layer 2 (a single neuron with 4 inputs)
-    #layer2 = NeuronLayer(1, 4, "Layer 2")
+    # layer2 = NeuronLayer(1, 4, "Layer 2")
 
     # Combine the layers to create a neural network
     neural_network = NeuralNetwork.load()
@@ -176,14 +171,14 @@ if __name__ == "__main__":
 
     # Train the neural network using the training set.
     # Do it 60,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 80000)
+    neural_network.train(training_set_inputs, training_set_outputs, 60000)
 
     # print("Stage 2) New synaptic weights after training: ")
     neural_network.print_layers()
 
     # Test the neural network with a new situation.
     # print("Stage 3) Considering a new situation [1, 1, 0] -> ?: ")
-    result, hidden_state = neural_network.think([1, 1, 0])
+    result = neural_network.predict([1, 1, 0])
     print(result)
 
-    print("Accurancy: " + str((abs(0 - result) / result)*100) + "%")
+    print("Accurancy: " + str((abs(0 - result) / result) * 100) + "%")
