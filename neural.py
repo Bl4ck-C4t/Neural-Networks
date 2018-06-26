@@ -54,7 +54,7 @@ class NeuronLayer():
 
 
 class NeuralNetwork():
-    def __init__(self, layer1, layer2, name='Default'):
+    def __init__(self, layer1, layer2, name="Default"):
         self.layer1 = layer1
         self.layer2 = layer2
         self.scale_n = 1
@@ -115,6 +115,8 @@ class NeuralNetwork():
                 print("Currently at iteration " + str(iteration))
                 delta_time = datetime.datetime.now() - self.start_time
                 print("Time elapsed: " + str(delta_time))
+                if iteration == 5000:
+                    print("Approximate training time:", delta_time*(number_of_training_iterations/5000))
 
             if iteration % 50000 == 0 and iteration > 0:
                 self.save(fl)
@@ -156,41 +158,4 @@ class NeuralNetwork():
         print(self.layer2)
 
 
-if __name__ == "__main__":
-    # Seed the random number generator
-    # Create layer 1 (4 neurons, each with 3 inputs)
-    layer1 = NeuronLayer(4, 3, "Layer 1")
-
-    # Create layer 2 (a single neuron with 4 inputs)
-    layer2 = NeuronLayer(1, 4, "Layer 2")
-
-    # Combine the layers to create a neural network
-    neural_network = NeuralNetwork.load()
-
-    # print("Stage 1) Random starting synaptic weights: ")
-    neural_network.print_layers()
-
-    # The training set. We have 7 examples, each consisting of 3 input values
-    # and 1 output value.
-    training_set_inputs = [[0, 0, 1], [0, 1, 1], [1, 0, 1], [0, 1, 0], [1, 0, 0], [1, 1, 1], [0, 0, 0]]
-    training_set_outputs = [0, 1, 1, 1, 1, 0, 0]
-    #training_set_inputs, training_set_outputs = Datasets.Sums.get(12)
-
-    # training_set_inputs = numpy.array(training_set_inputs)
-
-    # Train the neural network using the training set.
-    # Do it 60,000 times and make small adjustments each time.
-    # neural_network.train(training_set_inputs, training_set_outputs, 60000, "sums.d")
-
-    # print("Stage 2) New synaptic weights after training: ")
-    neural_network.print_layers()
-
-    # Test the neural network with a new situation.
-    # print("Stage 3) Considering a new situation [1, 1, 0] -> ?: ")
-
-    result = neural_network.predict([1,1,0])
-    #accurancy = 100-(abs(0 - result) / 0) * 100
-    print(result)
-
-    #print("Accurancy: " + str(round(accurancy, 3)) + "%")
 
