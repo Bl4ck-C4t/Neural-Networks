@@ -6,6 +6,7 @@ from numpy import random as rm
 
 
 # TODO make it for  number of layers
+# TODO make it with universal outputs starting from the think() function
 
 class Neuron:
     def __init__(self, inputs):
@@ -50,8 +51,9 @@ class NeuronLayer():
 
 
 class NeuralNetwork():
-    def __init__(self, layers):
+    def __init__(self, layers, name='Default'):
         self.layers = layers
+        self.name = name
         self.scale_n = 1
 
     # The Sigmoid function, which describes an S shaped curve.
@@ -78,14 +80,6 @@ class NeuralNetwork():
         with open(filename, "rb") as f:
             return pickle.load(f)
 
-    def rotation_sum(self, inputs, weights):
-        res = []
-        for inp in inputs:
-            tmp = []
-            for x in weights:
-                tmp.append(inp * x)
-            res.append(tmp)
-        return res
 
     def adjust(self, neurons, inputs, deltas):
         for i, neuron in enumerate(neurons):
@@ -112,34 +106,54 @@ class NeuralNetwork():
                 print("Currently at iteration " + str(iteration))
                 delta_time = datetime.datetime.now() - self.start_time
                 print("Time elapsed: " + str(delta_time))
-            for i in range(len(training_set_inputs)):
-                s_input = self.scale(training_set_inputs[i])
+
+            if iteration == 1:
+                delta_time = datetime.datetime.now() - self.start_time
+                print("Approximate training time:", delta_time * number_of_training_iterations)
+
+            if iteration % 50000 == 0 and iteration > 0:
+                self.save(fl)
+
+            for s_input, s_output in zip(training_set_inputs, training_set_outputs):
+                s_input = self.scale(s_input)
                 # exit()
                 output, neuron_outputs = self.think(s_input)
                 # Calculate the error for layer 2 (The difference between the desired output
                 # and the predicted output).
-                output_error = training_set_outputs[i] - output
+                output_error = s_output - output
                 output_delta = output_error * self.sigmoid_der(output)
 
-                hidden_error = [output_delta * weight for weight in self.layers[1][0]]
-                hidden_delta = [self.sigmoid_der(x) * hidden_error[i] for i, x in enumerate(neuron_outputs)]
+                deltas = [[output_delta]]
+                neuron_outputs.reverse()
+                for i,layer_outputs in enumerate(neuron_outputs):
+                    layer = self.layers[::-1][i]
+                    deltas.append([0 for _ in range(len(neuron_outputs[i+1]))])
+                    for j,neuron_out in enumerate(layer_outputs):
+                        neuron = layer[j]
+                        delta = deltas[0][j]
+                        next_errors = [delta * weight for weight in neuron]
+                        for k, x in enumerate(neuron_outputs[i + 1]):
+                            deltas[1][k] += self.sigmoid_der(x) * next_errors[k]
 
-                self.adjust(self.layers[0], s_input, hidden_delta)
-                self.adjust(self.layers[1], neuron_outputs, [output_delta])
+                    self.adjust(layer, neuron_outputs[i+1], deltas[0])
+                    del deltas[0]
+                    if i == len(neuron_outputs)-2:
+                        break
+
         end_time = datetime.datetime.now() - self.start_time
         print("Done {} iterations on {} datasets for ".format(iteration + 1, len(training_set_inputs)) + str(end_time))
         self.save(fl)
 
     # The neural network thinks.
     def think(self, inputs):
-        neuron_outputs = []
+        neuron_outputs = [inputs]
         for layer in self.layers:
             layer_outputs = []
             for i, weights in enumerate(layer):
                 layer_outputs.append(self.sigmoid(self.sum_weights(inputs, weights)))
             neuron_outputs.append(layer_outputs)
-            inputs = layer_outputs
-        output = neuron_outputs[-1]
+            inputs = layer_outputs[:]
+        output = neuron_outputs[-1][0]  # modify for multiple outputs
         return output, neuron_outputs
 
     def predict(self, inputs):
@@ -158,7 +172,9 @@ if __name__ == "__main__":
     layer1 = NeuronLayer(4, 3, "Layer 1")
 
     # Create layer 2 (a single neuron with 4 inputs)
-    layer2 = NeuronLayer(1, 4, "Layer 2")
+    layer2 = NeuronLayer(3, 4, "Layer 2")
+
+    layer3 = NeuronLayer(1, 3, "Layer 3")
 
     # Combine the layers to create a neural network
     neural_network = NeuralNetwork.load()
@@ -175,7 +191,7 @@ if __name__ == "__main__":
 
     # Train the neural network using the training set.
     # Do it 60,000 times and make small adjustments each time.
-    neural_network.train(training_set_inputs, training_set_outputs, 60000)
+    neural_network.train(training_set_inputs, training_set_outputs, 100000)
 
     # print("Stage 2) New synaptic weights after training: ")
     neural_network.print_weights()

@@ -102,7 +102,7 @@ class NeuralNetwork():
         for x in inputs:
             biggest = sorted(x)[-1] if biggest < sorted(x)[-1] else biggest
         biggest = sorted(outputs)[-1] if biggest < sorted(outputs)[-1] else biggest
-        return 10**len(str(biggest))
+        return 10 ** len(str(biggest))
 
     # We train the neural network through a process of trial and error.
     # Adjusting the synaptic weights each time.
@@ -111,12 +111,14 @@ class NeuralNetwork():
         self.start_time = datetime.datetime.now()
         for iteration in range(number_of_training_iterations):
             # Pass the training set through our neural network
+            if iteration == 1:
+                delta_time = datetime.datetime.now() - self.start_time
+                print("Approximate training time:", delta_time * number_of_training_iterations)
+
             if iteration % 5000 == 0:
                 print("Currently at iteration " + str(iteration))
                 delta_time = datetime.datetime.now() - self.start_time
                 print("Time elapsed: " + str(delta_time))
-                if iteration == 5000:
-                    print("Approximate training time:", delta_time*(number_of_training_iterations/5000))
 
             if iteration % 50000 == 0 and iteration > 0:
                 self.save(fl)
@@ -156,6 +158,3 @@ class NeuralNetwork():
     def print_layers(self):
         print(self.layer1)
         print(self.layer2)
-
-
-
